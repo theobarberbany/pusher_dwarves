@@ -1,10 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	//"log"
-	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 )
@@ -138,10 +138,10 @@ func getDwarves() (*[]byte, error) {
 func getDwarf(name string) (*[]byte, error) {
 	dwarfMap, err := getMap(serviceUrl, retries)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
 	if dwarfMap == nil {
-		fmt.Println("Unknown error getting dwarf map")
+		return nil, fmt.Errorf("Unknown error getting dwarf map")
 	}
 
 	dwarf, present := (*dwarfMap)[name]
@@ -170,23 +170,28 @@ func getDwarf(name string) (*[]byte, error) {
 	return &output, nil
 }
 
+func apiHandler(w http.ResponseWriter, r *http.Request) {
+	request := r.URL.Path[len("/api/"):]
+
+	if len(request) == 0 {
+
+		out, err := getDwarves()
+		if err != nil {
+			log.Print(err)
+		}
+		fmt.Fprintf(w, string(*out))
+	} else {
+
+		out, err := getDwarf(request)
+		if err != nil {
+			log.Print(err)
+		}
+		fmt.Fprintf(w, string(*out))
+	}
+}
+
 func main() {
-	json, err := getDwarves()
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(string(*json))
-
-	out, err := getDwarf("Bombur")
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(string(*out))
-
-	out2, err := getDwarf("test")
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(string(*out2))
+	http.HandleFunc("/api/", apiHandler)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 
 }
