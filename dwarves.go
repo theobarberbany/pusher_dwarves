@@ -24,6 +24,14 @@ type ResponseArray struct {
 	Dwarves []string `json:"dwarves"`
 }
 
+type ResponseDwarf struct {
+	Dwarf `json:"dwarf"`
+}
+
+type ResponseError struct {
+	Msg string `json:"error"`
+}
+
 const serviceUrl string = "https://thedwarves.pusherplatform.io/api/dwarves"
 const retries int = 5
 
@@ -96,7 +104,10 @@ func getMap(url string, retries int) (*map[string]Dwarf, error) {
 	return &dwarfMap, nil
 }
 
-func getDwarves() (string, error) {
+// getDwarves returns a json array of all the dwarf
+// names in the map returned by dwarfMap().
+// The json structure follows the ResponseArray struct
+func getDwarves() (*[]byte, error) {
 	dwarfMap, err := getMap(serviceUrl, retries)
 	if err != nil {
 		fmt.Println(err)
@@ -117,11 +128,46 @@ func getDwarves() (string, error) {
 
 	json, err := json.Marshal(response)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return string(json), nil
+	return &json, nil
 
+}
+
+func getDwarf(name string) (*[]byte, error) {
+	dwarfMap, err := getMap(serviceUrl, retries)
+	if err != nil {
+		fmt.Println(err)
+	}
+	if dwarfMap == nil {
+		fmt.Println("Unknown error getting dwarf map")
+	}
+
+	dwarf, present := (*dwarfMap)[name]
+
+	var output []byte
+	if present {
+		response := ResponseDwarf{
+			dwarf,
+		}
+
+		output, err = json.Marshal(response)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		response := ResponseError{
+			Msg: "dwarf not found",
+		}
+
+		output, err = json.Marshal(response)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &output, nil
 }
 
 func main() {
@@ -129,6 +175,18 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(json)
+	fmt.Println(string(*json))
+
+	out, err := getDwarf("Bombur")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(string(*out))
+
+	out2, err := getDwarf("test")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(string(*out2))
 
 }
