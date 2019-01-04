@@ -20,6 +20,13 @@ type DwarfData struct {
 	Dwarves []Dwarf `json:"dwarves"`
 }
 
+type ResponseArray struct {
+	Dwarves []string `json:"dwarves"`
+}
+
+const serviceUrl string = "https://thedwarves.pusherplatform.io/api/dwarves"
+const retries int = 5
+
 // getJson wraps a GET request in a retry function. This is because the dwarves are
 // sometimes busy. Url specifies where to find the dwarves,  retries how many times to
 // knock before giving up.
@@ -59,28 +66,69 @@ func getJson(url string, retries int) (*[]byte, error) {
 	return &body, err_retry
 }
 
-//func getMap(url string, retries int) (*map[string]Dwarf, error) {
-//}
-
-func main() {
+// getMap calls getJson and restructures the response to a
+// *map[string]Dwarf. The parameters are the same as getJson
+func getMap(url string, retries int) (*map[string]Dwarf, error) {
 	// Get JSON information on the dwarves.
-	dwarfJson, _ := getJson("https://thedwarves.pusherplatform.io/api/dwarves", 5)
-	fmt.Printf("body: %s\n\n\n", string(*dwarfJson))
+	dwarfJson, err := getJson(url, retries)
+	if err != nil {
+		return nil, err
+	}
+
+	if dwarfJson == nil {
+		return nil, fmt.Errorf("Unknown error getting json")
+	}
+
+	//fmt.Printf("body: %s\n\n\n", string(*dwarfJson))
 
 	var dwarves DwarfData
-	err := json.Unmarshal(*dwarfJson, &dwarves)
+	err = json.Unmarshal(*dwarfJson, &dwarves)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
 
 	dwarfMap := make(map[string]Dwarf)
 	for _, dwarf := range dwarves.Dwarves {
-		fmt.Printf("adding %s to map\n", dwarf.Name)
+		//fmt.Printf("adding %s to map\n", dwarf.Name)
 		dwarfMap[dwarf.Name] = dwarf
 	}
 
-	for key, val := range dwarfMap {
-		fmt.Printf("Dwarf Name: %s, Value: %s\n", key, val)
+	return &dwarfMap, nil
+}
+
+func getDwarves() (string, error) {
+	dwarfMap, err := getMap(serviceUrl, retries)
+	if err != nil {
+		fmt.Println(err)
 	}
+	if dwarfMap == nil {
+		fmt.Println("Unknown error getting dwarf map")
+	}
+
+	var dwarves []string
+	for name, _ := range *dwarfMap {
+		dwarves = append(dwarves, name)
+		//fmt.Printf("Dwarf Name: %s, Value: %s\n", name, val)
+	}
+
+	response := ResponseArray{
+		Dwarves: dwarves,
+	}
+
+	json, err := json.Marshal(response)
+	if err != nil {
+		return "", err
+	}
+
+	return string(json), nil
+
+}
+
+func main() {
+	json, err := getDwarves()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(json)
 
 }
