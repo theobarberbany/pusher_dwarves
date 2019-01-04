@@ -20,12 +20,12 @@ type DwarfData struct {
 	Dwarves []Dwarf `json:"dwarves"`
 }
 
-// getDwarves wraps a GET request in a retry function. This is because the dwarves are
-// sometimes busy. Url specifies where to find the dwarves, and retries how many times to
-// retry before giving up.
+// getJson wraps a GET request in a retry function. This is because the dwarves are
+// sometimes busy. Url specifies where to find the dwarves,  retries how many times to
+// knock before giving up.
 // The body of the get response is returned as a slice of bytes.
 // There is a back off between retries.
-func getDwarves(url string, retries int) (*[]byte, error) {
+func getJson(url string, retries int) (*[]byte, error) {
 	// Build get request and response outside of retry func
 	resp := &http.Response{}
 	req, err := http.NewRequest(
@@ -59,16 +59,28 @@ func getDwarves(url string, retries int) (*[]byte, error) {
 	return &body, err_retry
 }
 
+//func getMap(url string, retries int) (*map[string]Dwarf, error) {
+//}
+
 func main() {
 	// Get JSON information on the dwarves.
-	dwarfJson, _ := getDwarves("https://thedwarves.pusherplatform.io/api/dwarves", 5)
-	fmt.Printf("Body: %s\n\n\n", string(*dwarfJson))
+	dwarfJson, _ := getJson("https://thedwarves.pusherplatform.io/api/dwarves", 5)
+	fmt.Printf("body: %s\n\n\n", string(*dwarfJson))
 
 	var dwarves DwarfData
 	err := json.Unmarshal(*dwarfJson, &dwarves)
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(dwarves)
+
+	dwarfMap := make(map[string]Dwarf)
+	for _, dwarf := range dwarves.Dwarves {
+		fmt.Printf("adding %s to map\n", dwarf.Name)
+		dwarfMap[dwarf.Name] = dwarf
+	}
+
+	for key, val := range dwarfMap {
+		fmt.Printf("Dwarf Name: %s, Value: %s\n", key, val)
+	}
 
 }
