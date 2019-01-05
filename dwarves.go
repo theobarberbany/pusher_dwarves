@@ -49,7 +49,7 @@ func getJson(url string, retries int) (*[]byte, error) {
 		nil)
 
 	if err != nil {
-		return nil, fmt.Errorf("unable to create request", err)
+		return nil, fmt.Errorf("unable to create request: %s", err)
 	}
 
 	err_retry := retry(retries, time.Second, func() error {
@@ -135,6 +135,12 @@ func getDwarves() (*[]byte, error) {
 
 }
 
+// getDwarf returns information on a given dwarf.
+// the output structure follows ResponseDwarf or
+// responseError. If a dwarf the system does not know about
+// is requested, the json returned is an error "dwarf not found"
+// the function it's self will only return an error if some part
+// of the system fails.
 func getDwarf(name string) (*[]byte, error) {
 	dwarfMap, err := getMap(serviceUrl, retries)
 	if err != nil {
