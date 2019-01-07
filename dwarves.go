@@ -35,11 +35,10 @@ type ResponseError struct {
 const serviceUrl string = "https://thedwarves.pusherplatform.io/api/dwarves"
 const retries int = 5
 
-// getJson wraps a GET request in a retry function. This is because the dwarves are
-// sometimes busy. Url specifies where to find the dwarves,  retries how many times to
-// knock before giving up.
-// The body of the get response is returned as a slice of bytes.
-// There is a back off between retries.
+// getJson wraps a GET request in a retry function. This is because the dwarves
+// are sometimes busy. Url specifies where to find the dwarves,  retries how
+// many times to knock before giving up.  The body of the get response is
+// returned as a slice of bytes.  There is a back off between retries.
 func getJson(url string, retries int) (*[]byte, error) {
 	// Build get request and response outside of retry func
 	resp := &http.Response{}
@@ -74,8 +73,8 @@ func getJson(url string, retries int) (*[]byte, error) {
 	return &body, err_retry
 }
 
-// getMap calls getJson and restructures the response to a
-// *map[string]Dwarf. The parameters are the same as getJson
+// getMap calls getJson and restructures the response to a *map[string]Dwarf.
+// The parameters are the same as getJson
 func getMap(url string, retries int) (*map[string]Dwarf, error) {
 	// Get JSON information on the dwarves.
 	dwarfJson, err := getJson(url, retries)
@@ -104,9 +103,8 @@ func getMap(url string, retries int) (*map[string]Dwarf, error) {
 	return &dwarfMap, nil
 }
 
-// getDwarves returns a json array of all the dwarf
-// names in the map returned by dwarfMap().
-// The json structure follows the ResponseArray struct
+// getDwarves returns a json array of all the dwarf names in the map returned by
+// dwarfMap().  The json structure follows the ResponseArray struct.
 func getDwarves() (*[]byte, error) {
 	dwarfMap, err := getMap(serviceUrl, retries)
 	if err != nil {
@@ -135,12 +133,10 @@ func getDwarves() (*[]byte, error) {
 
 }
 
-// getDwarf returns information on a given dwarf.
-// the output structure follows ResponseDwarf or
-// responseError. If a dwarf the system does not know about
-// is requested, the json returned is an error "dwarf not found"
-// the function it's self will only return an error if some part
-// of the system fails.
+// getDwarf returns information on a given dwarf.  The output structure follows
+// ResponseDwarf or responseError. If a dwarf the system does not know about is
+// requested, the json returned is an error "dwarf not found" the function it's
+// self will only return an error if some part of the system fails.
 func getDwarf(name string) (*[]byte, error) {
 	dwarfMap, err := getMap(serviceUrl, retries)
 	if err != nil {
@@ -176,6 +172,10 @@ func getDwarf(name string) (*[]byte, error) {
 	return &output, nil
 }
 
+// apiHandler deals with any requests coming to the server that are of the
+// format /api/x. If there is no name in a request it returns a call to
+// getDwarves(), otherwise calls getDwarf with the name after /api/ in the
+// request.
 func apiHandler(w http.ResponseWriter, r *http.Request) {
 	request := r.URL.Path[len("/api/"):]
 
